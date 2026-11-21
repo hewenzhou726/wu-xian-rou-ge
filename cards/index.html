@@ -232,6 +232,32 @@
   #banner h1 { font-size:46px; letter-spacing:10px; color:#f2e3bb; text-shadow:0 0 34px rgba(216,178,92,.6); }
   #banner p { margin-top:12px; color:#b9ccd6; font-size:14.5px; letter-spacing:1px; line-height:1.9; }
   #mapnodes { position:absolute; left:50%; top:118px; transform:translateX(-50%); width:1060px; height:520px; z-index:6; }
+  /* ===== animation pack ===== */
+  #fxlayer { position:absolute; inset:0; z-index:30; pointer-events:none; overflow:hidden; }
+  .burst { position:absolute; width:230px; height:230px; margin:-115px 0 0 -115px; border-radius:50%; opacity:0; pointer-events:none; }
+  .burst.go { animation: burstA .48s ease-out both; }
+  @keyframes burstA { 0% { opacity:.95; transform:scale(.25) rotate(0deg); } 100% { opacity:0; transform:scale(1.3) rotate(22deg); } }
+  .burst.slash { background: radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(160,230,255,.55) 30%, transparent 65%); clip-path: polygon(0 40%, 100% 28%, 100% 54%, 0 66%); border-radius:0; }
+  .burst.fire { background: radial-gradient(circle, rgba(255,220,150,.95) 0%, rgba(255,120,40,.6) 35%, transparent 68%); }
+  .burst.frost { background: radial-gradient(circle, rgba(220,250,255,.95) 0%, rgba(90,200,235,.55) 35%, transparent 68%); }
+  .burst.bolt { background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(140,240,255,.65) 28%, transparent 62%); }
+  .burst.heal { background: radial-gradient(circle, rgba(190,255,205,.9) 0%, rgba(70,220,130,.5) 38%, transparent 68%); }
+  .burst.block { background: radial-gradient(circle, transparent 38%, rgba(140,210,255,.8) 62%, transparent 80%); }
+  #screen-combat.shake { animation: shk .38s; }
+  @keyframes shk { 0%,100% { transform:none; } 20% { transform:translate(-7px,3px); } 45% { transform:translate(6px,-3px); } 70% { transform:translate(-4px,-2px); } }
+  #enemy .eimg { transition: filter .55s, opacity .55s, transform .55s; }
+  #enemy.dying .eimg { filter: grayscale(1) brightness(.35); opacity:.22; transform: translateY(26px) scale(.94); }
+  #hand.drawing .card { animation: drawin .34s cubic-bezier(.2,.9,.3,1.25) both; }
+  #hand.drawing .card:nth-child(2) { animation-delay:.05s; } #hand.drawing .card:nth-child(3) { animation-delay:.1s; }
+  #hand.drawing .card:nth-child(4) { animation-delay:.15s; } #hand.drawing .card:nth-child(5) { animation-delay:.2s; }
+  #hand.drawing .card:nth-child(6) { animation-delay:.25s; } #hand.drawing .card:nth-child(7) { animation-delay:.3s; }
+  @keyframes drawin { from { transform: translate(-280px,130px) rotate(-16deg) scale(.55); opacity:0; } }
+  #legmoment { position:absolute; inset:0; z-index:58; display:none; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(10,14,20,.2), rgba(5,8,12,.8)); }
+  #legmoment.on { display:flex; }
+  #legmoment .bigcardwrap { transform: scale(1.85); animation: legin .45s cubic-bezier(.2,.9,.3,1.3) both; }
+  #legmoment .legtext { position:absolute; top:96px; left:0; right:0; text-align:center; font-size:34px; letter-spacing:16px; color:#ffe9a8; font-weight:900; text-shadow:0 0 34px rgba(255,190,60,.85); animation: legin .5s both; }
+  @keyframes legin { from { opacity:0; transform: translateY(16px) scale(.9); } }
+  .flycard { position:absolute; z-index:55; pointer-events:none; margin:0 !important; }
 </style>
 </head>
 <body>
@@ -297,7 +323,7 @@
     <div id="topright">
       <div class="tchip">❤️ <b id="tb-hp">80/80</b></div>
       <div class="tchip">🪙 <b id="tb-gold">0</b></div>
-      <div class="tchip" id="deckbtn">牌组 <b id="tb-deck">10</b></div>
+      <div class="tchip" id="deckbtn">牌组 <b id="tb-deck">11</b></div>
     </div>
   </div>
   <div id="relicbar"></div>
@@ -367,6 +393,9 @@
     </div>
   </div>
 
+  <div id="fxlayer"></div>
+  <div id="legmoment"><div class="legtext">✦ 传 说 降 临 ✦</div><div class="bigcardwrap" id="legcard"></div></div>
+
   <!-- GAME OVER / VICTORY -->
   <div id="banner"><div class="box">
     <h1 id="bannertitle">胜 利</h1>
@@ -378,8 +407,13 @@
 /* ================= DATA ================= */
 const $ = id => document.getElementById(id);
 const stage = $("stage");
-function fit(){ const s = Math.min(innerWidth/1280, innerHeight/720); stage.style.transform = `translate(-50%,-50%) scale(${s})`; }
-addEventListener("resize", fit); fit();
+function fit(){ const w = innerWidth, h = innerHeight;
+  if(h > w){ window.__rot = 90; window.__scale = Math.min(w / 720, h / 1280); }
+  else { window.__rot = 0; window.__scale = Math.min(w / 1280, h / 720); }
+  stage.style.transform = `translate(-50%,-50%) rotate(${window.__rot}deg) scale(${window.__scale})`; }
+addEventListener("resize", fit);
+addEventListener("orientationchange", () => { fit(); setTimeout(fit, 250); setTimeout(fit, 600); });
+fit();
 const rnd = (a,b)=> a + Math.random()*(b-a);
 const irnd = (a,b)=> Math.floor(rnd(a, b+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
@@ -585,7 +619,7 @@ function nodeCleared(){
 function startRun(){
   R = { hp: 80, maxhp: 80, gold: 60, act: 1, pos: null, kills: 0, combats: 0,
     deck: [], relics: [], map: null };
-  const starter = ["strike","strike","strike","strike","guard","guard","guard","guard","windstep","blood"];
+  const starter = ["strike","strike","strike","strike","guard","guard","guard","guard","windstep","blood","hero"];
   R.deck = starter.map(id => ({ id, up: false }));
   R.map = genMap(1);
   REC.runs++; REC.best = Math.max(REC.best, 1); saveRec(); renderStartRecords();
@@ -639,11 +673,13 @@ function startCombat(kind){
   if(hasRelic("mirror")) C.vuln = 1;
   R.combats++;
   $("enemyimg").src = C.img;
+  $("enemy").classList.remove("dying");
   $("enemy").classList.toggle("bossmode", kind === "boss");
   $("enemyname").innerHTML = `${C.name}<small>${C.en}</small>`;
   $("tb-where").textContent = kind === "boss" ? "Boss 战" : kind === "elite" ? "精英战" : "战斗";
   showScreen("combat");
   drawCards(5 + (hasRelic("boots") ? 1 : 0), true);
+  $("hand").classList.add("drawing"); setTimeout(() => $("hand").classList.remove("drawing"), 750);
   syncCombat();
 }
 function curMove(){ return C.moves[C.moveIdx % C.moves.length]; }
@@ -735,18 +771,55 @@ function enemyHitPlayer(base){
   if(C.pvuln > 0) d = Math.floor(d * 1.5);
   d = Math.max(0, d);
   const absorbed = Math.min(C.pblock, d); C.pblock -= absorbed; d -= absorbed;
-  if(d > 0){ damagePlayerRaw(d); $("player").classList.remove("hit"); void $("player").offsetWidth; $("player").classList.add("hit"); }
+  if(d > 0){ damagePlayerRaw(d); $("player").classList.remove("hit"); void $("player").offsetWidth; $("player").classList.add("hit"); burstOn($("player"), "slash"); }
   floatNum(150, 400, d > 0 ? "-" + d : "格挡抵挡", d > 0 ? "#ff9a8a" : "#9fd8ff");
+}
+function stagePos(rect){ const sr = stage.getBoundingClientRect();
+  const scx = sr.left + sr.width / 2, scy = sr.top + sr.height / 2;
+  let dx = (rect.left + rect.width / 2 - scx) / (window.__scale || 1);
+  let dy = (rect.top + rect.height / 2 - scy) / (window.__scale || 1);
+  if(window.__rot === 90){ const t = dx; dx = dy; dy = -t; }
+  return { x: 640 + dx, y: 360 + dy }; }
+function burstAt(x, y, type){ const b = document.createElement("div"); b.className = "burst " + type;
+  b.style.left = x + "px"; b.style.top = y + "px"; $("fxlayer").appendChild(b);
+  requestAnimationFrame(() => b.classList.add("go")); setTimeout(() => b.remove(), 560); }
+function burstOn(el, type){ const p = stagePos(el.getBoundingClientRect()); burstAt(p.x, p.y, type); }
+function screenShake(){ const sc = $("screen-combat"); sc.classList.remove("shake"); void sc.offsetWidth; sc.classList.add("shake"); }
+function impactFx(inst){ const d = CARDS[inst.id], n = cardNums(inst);
+  if(n.dmg){ const t = inst.id === "firestorm" ? "fire" : (inst.id === "thunder" || inst.id === "chain") ? "bolt" : inst.id === "frost" ? "frost" : "slash";
+    burstOn($("enemyframe"), t);
+    if((n.dmg + C.pstr) * (n.hits || 1) >= 15 || d.rarity === "legendary") screenShake(); }
+  else if(n.block) burstOn($("player"), "block");
+  else if(n.heal) burstOn($("player"), "heal"); }
+function flyCard(node, inst, targetEl, done){
+  const c = cardEl(inst); c.classList.add("flycard");
+  const from = stagePos(node.getBoundingClientRect());
+  const to = stagePos(targetEl.getBoundingClientRect());
+  c.style.left = (from.x - 64) + "px"; c.style.top = (from.y - 91) + "px";
+  stage.appendChild(c);
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const anim = c.animate([
+    { transform: "translate(0,0) rotate(0deg) scale(1)", opacity: 1 },
+    { transform: `translate(${dx * .55}px, ${dy * .55 - 70}px) rotate(7deg) scale(1.06)`, opacity: 1, offset: .55 },
+    { transform: `translate(${dx}px, ${dy}px) rotate(-5deg) scale(1.14)`, opacity: .96 }
+  ], { duration: 330, easing: "cubic-bezier(.3,.7,.4,1)" });
+  anim.onfinish = () => { c.remove(); done(); };
+}
+function showLegendaryMoment(inst, done){
+  const lm = $("legmoment"); const wrap = $("legcard");
+  wrap.innerHTML = ""; wrap.appendChild(cardEl(inst, { big: true }));
+  lm.classList.add("on");
+  setTimeout(() => { lm.classList.remove("on"); impactFx(inst); done(); }, 1000);
 }
 function playCard(hidx, node){
   if(!C || C.busy || C.over) return;
   const w = C.hand[hidx]; if(!w) return;
   const d = CARDS[w.inst.id], n = cardNums(w.inst);
   if(d.cost > C.energy) return;
-  C.busy = true; C.energy -= d.cost;
-  node.classList.add("playing");
-  setTimeout(() => {
-    C.hand.splice(hidx, 1); C.discard.push(w);
+  C.busy = true; C.energy -= d.cost; syncCombat();
+  node.style.visibility = "hidden";
+  const finish = () => {
+    C.hand.splice(C.hand.indexOf(w), 1); C.discard.push(w);
     let dealt = 0;
     if(n.dmg){ const hits = n.hits || 1;
       for(let h = 0; h < hits; h++){ dealt += dealDamageToEnemy(n.dmg, true); if(C.hp <= 0) break; }
@@ -765,7 +838,9 @@ function playCard(hidx, node){
     renderHand(); C.busy = false; syncCombat();
     if(C.hp <= 0) winCombat();
     else if(R.hp <= 0) loseCombat();
-  }, 390);
+  };
+  if(d.rarity === "legendary") showLegendaryMoment(w.inst, finish);
+  else flyCard(node, w.inst, n.dmg ? $("enemyframe") : $("player"), () => { impactFx(w.inst); finish(); });
 }
 $("endturn").addEventListener("click", endTurn);
 function endTurn(){
@@ -795,12 +870,14 @@ function endTurn(){
         if(R.hp <= 0){ syncCombat(); loseCombat(); return; } }
       C.energy = C.emax;
       drawCards(5 + (hasRelic("boots") ? 1 : 0));
+      $("hand").classList.add("drawing"); setTimeout(() => $("hand").classList.remove("drawing"), 750);
       C.busy = false; syncCombat();
     }, 620);
   }, 560);
 }
 function winCombat(){
   if(C.over) return; C.over = true; R.kills++;
+  $("enemy").classList.add("dying");
   if(hasRelic("fang")) healPlayer(4);
   const goldBase = C.kind === "boss" ? 110 : C.kind === "elite" ? irnd(42, 58) : irnd(22, 38);
   const gold = gainGold(goldBase);
@@ -818,13 +895,13 @@ function winCombat(){
     row.appendChild(el);
   });
   $("rewardskip").style.display = ""; $("rewardgo").style.display = "none";
-  openPanel("panel-reward"); syncCombat();
+  setTimeout(() => openPanel("panel-reward"), 720); syncCombat();
 }
 function rollRewardCards(legendBoost){
   const out = [], usedTypes = new Set();
   while(out.length < 3){
     const r = Math.random();
-    const rarity = r < 0.05 + legendBoost ? "legendary" : r < 0.38 ? "rare" : "common";
+    const rarity = r < 0.08 + legendBoost ? "legendary" : r < 0.38 ? "rare" : "common";
     const pool = Object.keys(CARDS).filter(id => CARDS[id].rarity === rarity);
     const id = pick(pool);
     if(usedTypes.has(id) && Math.random() < 0.7) continue;
