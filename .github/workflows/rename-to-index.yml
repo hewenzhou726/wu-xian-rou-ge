@@ -14,11 +14,15 @@ jobs:
       - name: Rename file to index.html
         run: |
           if [ -f "wu-xian-rou-ge-phone.html" ] && [ ! -f "index.html" ]; then
-            git config user.name "hewenzhou726"
-            git config user.email "hewenzhou726@users.noreply.github.com"
-            git mv wu-xian-rou-ge-phone.html index.html
-            git commit -m "Rename wu-xian-rou-ge-phone.html to index.html"
-            git push
+            SRC="wu-xian-rou-ge-phone.html"
+          elif [ -f "wu-xian-rou-ge-phone-v6.html" ] && [ ! -f "index.html" ]; then
+            SRC="wu-xian-rou-ge-phone-v6.html"
           else
             echo "Nothing to rename"
+            exit 0
           fi
+          git config user.name "hewenzhou726"
+          git config user.email "hewenzhou726@users.noreply.github.com"
+          git mv "$SRC" index.html
+          git commit -m "Rename $SRC to index.html"
+          git push
