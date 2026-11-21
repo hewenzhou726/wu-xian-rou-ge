@@ -1,0 +1,24 @@
+name: Rename game file to index.html
+on:
+  push:
+    paths:
+      - .github/workflows/rename-to-index.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rename file to index.html
+        run: |
+          if [ -f "wu-xian-rou-ge-phone.html" ] && [ ! -f "index.html" ]; then
+            git config user.name "hewenzhou726"
+            git config user.email "hewenzhou726@users.noreply.github.com"
+            git mv wu-xian-rou-ge-phone.html index.html
+            git commit -m "Rename wu-xian-rou-ge-phone.html to index.html"
+            git push
+          else
+            echo "Nothing to rename"
+          fi
